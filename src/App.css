@@ -1,0 +1,426 @@
+:root {
+  --bg-color: #121212;
+  --surface-color: #1e1e1e;
+  --primary-color: #00e5ff;
+  --text-color: #ffffff;
+  --secondary-text: #a0a0a0;
+  --glass-bg: rgba(30, 30, 30, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: radial-gradient(
+    circle at top right,
+    #1a2a3a 0%,
+    var(--bg-color) 60%
+  );
+}
+
+.titlebar {
+  height: 32px;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  -webkit-app-region: drag;
+  font-size: 12px;
+  color: var(--secondary-text);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 10px 20px;
+  overflow-y: auto;
+}
+
+.bpm-display {
+  text-align: center;
+}
+
+.current-song-title {
+  font-size: 20px;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.bpm-text {
+  font-size: 100px;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1;
+  background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px rgba(0, 229, 255, 0.2));
+}
+
+.bpm-label {
+  font-size: 16px;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 4px;
+}
+
+.visualizer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 90%;
+  max-width: 360px;
+}
+
+/* Progress bar across the top */
+.beat-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.beat-progress-fill {
+  height: 100%;
+  background: var(--primary-color);
+  border-radius: 2px;
+  transition: width 0.06s linear;
+  box-shadow: 0 0 8px var(--primary-color);
+}
+
+/* Beat blocks row */
+.beat-blocks {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.beat-block {
+  flex: 1 1 0;
+  min-width: 36px;
+  max-width: 72px;
+  height: 52px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 6px;
+  transition: all 0.06s ease-out;
+  cursor: pointer;
+  user-select: none;
+}
+
+.beat-block:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.block-line {
+  display: block;
+  height: 3px;
+  border-radius: 1.5px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: all 0.1s ease-out;
+}
+
+/* Filled lines = active accent level */
+.block-line.filled {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* Muted block */
+.beat-block.muted {
+  opacity: 0.35;
+}
+
+/* Active beat glow (currently playing) */
+.beat-block.active {
+  border-color: var(--primary-color);
+  box-shadow:
+    0 0 14px rgba(0, 229, 255, 0.3),
+    inset 0 0 8px rgba(0, 229, 255, 0.08);
+  transform: scale(1.04);
+}
+
+.beat-block.active .block-line.filled {
+  background: var(--primary-color);
+  box-shadow: 0 0 4px var(--primary-color);
+}
+
+/* Time Sig Controls */
+.time-sig-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ts-input,
+.ts-select {
+  background: transparent;
+  border: none;
+  color: var(--secondary-text);
+  font-size: 16px;
+  font-family: inherit;
+  text-align: center;
+  width: 40px;
+  outline: none;
+  border-bottom: 1px solid transparent;
+  transition:
+    border 0.2s,
+    color 0.2s;
+}
+
+.ts-input:focus,
+.ts-select:focus {
+  border-bottom-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.ts-select {
+  cursor: pointer;
+  appearance: none;
+}
+
+.ts-select option {
+  background: var(--surface-color);
+  color: white;
+}
+
+.ts-divider {
+  color: var(--secondary-text);
+  font-size: 18px;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.transport-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.control-btn {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-color);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+/* ---- NEXT/PREV BUTTONS ---- */
+.control-btn.nav {
+  width: 52px;
+  height: 52px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.control-btn.nav:hover:not(:disabled) {
+  color: var(--primary-color);
+  background: rgba(0, 229, 255, 0.15);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+}
+
+.control-btn.nav:disabled {
+  color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.05);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.control-btn:active {
+  transform: translateY(0);
+}
+
+.control-btn.primary {
+  width: 80px;
+  height: 80px;
+  background: var(--primary-color);
+  color: #000;
+  border: none;
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
+}
+
+.control-btn.primary:hover {
+  background: #33ebff;
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.5);
+}
+
+.control-btn.secondary {
+  width: 54px;
+  height: 54px;
+}
+
+/* ---- SETLIST STRIP ON MAIN PAGE ---- */
+.setlist-strip {
+  width: 90%;
+  max-width: 400px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+}
+
+.setlist-strip-title {
+  font-size: 11px;
+  color: var(--secondary-text);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px 6px;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 4px;
+}
+
+.strip-song {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--secondary-text);
+  transition: all 0.15s;
+}
+
+.strip-song:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.strip-song.active {
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.strip-song .strip-meta {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* Slider */
+.slider-container {
+  width: 80%;
+  max-width: 400px;
+}
+
+.bpm-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--surface-color);
+  border-radius: 3px;
+  outline: none;
+}
+
+.bpm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+  transition: transform 0.1s;
+}
+
+.bpm-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+/* Tap Tempo */
+.tap-tempo-btn {
+  width: 80%;
+  max-width: 400px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: var(--secondary-text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  font-family: inherit;
+  text-transform: uppercase;
+}
+
+.tap-tempo-btn:hover {
+  background: rgba(0, 229, 255, 0.08);
+  border-color: rgba(0, 229, 255, 0.25);
+  color: var(--primary-color);
+}
+
+.tap-tempo-btn:active {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: var(--primary-color);
+  color: #fff;
+  transform: scale(0.97);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.2);
+}
