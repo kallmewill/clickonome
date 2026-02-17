@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Plus,
-  Save,
   Music,
   Trash2,
   Database,
@@ -36,21 +35,40 @@ export function SetlistManager({
   const [songBeats, setSongBeats] = useState(currentBeatsPerBar || 4);
   const [songNote, setSongNote] = useState(currentNoteValue || 4);
 
-  useEffect(() => {
-    loadData();
+  const loadData = useCallback(async () => {
+    if (!window.electronAPI) return;
+    try {
+      const [sets, bank] = await Promise.all([
+        window.electronAPI.setlist.list(),
+        window.electronAPI.songbank.load(),
+      ]);
+      setSetlists(sets);
+      setSongBank(bank || []);
+    } catch (e) {
+      console.error("Failed to load data:", e);
+    }
   }, []);
 
-  const loadData = async () => {
-    if (window.electronAPI) {
-      const sets = await window.electronAPI.setlist.list();
-      setSetlists(sets);
-      const bank = await window.electronAPI.songbank.load();
-      setSongBank(bank || []);
-    }
-  };
+  const updateSetlistSongs = useCallback(
+    async (songs) => {
+      const updatedSet = { ...activeSetlist, songs };
+      setActiveSetlist(updatedSet);
+      if (window.electronAPI) {
+        await window.electronAPI.setlist.save(activeSetlist.name, updatedSet);
+      }
+    },
+    [activeSetlist],
+  );
+
+  useEffect(() => {
+    const init = async () => {
+      await loadData();
+    };
+    init();
+  }, [loadData]);
 
   // --- Bank Operations ---
-  const handleAddToBank = async () => {
+  const handleAddToBank = useCallback(async () => {
     if (!songTitle) return;
     const newSong = {
       id: Date.now(),
@@ -65,19 +83,22 @@ export function SetlistManager({
       await window.electronAPI.songbank.save(newBank);
     }
     setSongTitle("");
-  };
+  }, [songTitle, songBpm, songBeats, songNote, songBank]);
 
-  const handleDeleteFromBank = async (id) => {
-    if (!confirm("Delete song from bank?")) return;
-    const newBank = songBank.filter((s) => s.id !== id);
-    setSongBank(newBank);
-    if (window.electronAPI) {
-      await window.electronAPI.songbank.save(newBank);
-    }
-  };
+  const handleDeleteFromBank = useCallback(
+    async (id) => {
+      if (!confirm("Delete song from bank?")) return;
+      const newBank = songBank.filter((s) => s.id !== id);
+      setSongBank(newBank);
+      if (window.electronAPI) {
+        await window.electronAPI.songbank.save(newBank);
+      }
+    },
+    [songBank],
+  );
 
   // --- Setlist Operations ---
-  const handleCreateSetlist = async () => {
+  const handleCreateSetlist = useCallback(async () => {
     if (!newSetName) return;
     if (window.electronAPI) {
       const newSet = { name: newSetName, songs: [] };
@@ -86,27 +107,30 @@ export function SetlistManager({
       loadData();
       setActiveSetlist(newSet);
     }
-  };
+  }, [newSetName, loadData]);
 
-  const handleLoadSetlist = async (name) => {
+  const handleLoadSetlist = useCallback(async (name) => {
     if (window.electronAPI) {
       const data = await window.electronAPI.setlist.load(name);
       setActiveSetlist(data);
     }
-  };
+  }, []);
 
-  const handleDeleteSetlist = async (name) => {
-    if (!confirm(`Delete setlist "${name}"?`)) return;
-    if (window.electronAPI) {
-      await window.electronAPI.setlist.delete(name);
-      loadData();
-      if (activeSetlist && activeSetlist.name === name) {
-        setActiveSetlist(null);
+  const handleDeleteSetlist = useCallback(
+    async (name) => {
+      if (!confirm(`Delete setlist "${name}"?`)) return;
+      if (window.electronAPI) {
+        await window.electronAPI.setlist.delete(name);
+        loadData();
+        if (activeSetlist && activeSetlist.name === name) {
+          setActiveSetlist(null);
+        }
       }
-    }
-  };
+    },
+    [activeSetlist, loadData],
+  );
 
-  const handleAddSongToSet = async () => {
+  const handleAddSongToSet = useCallback(async () => {
     if (!activeSetlist || !songTitle) return;
     const newSong = {
       id: Date.now(),
@@ -117,35 +141,42 @@ export function SetlistManager({
     };
     await updateSetlistSongs([...(activeSetlist.songs || []), newSong]);
     setSongTitle("");
-  };
+  }, [
+    activeSetlist,
+    songTitle,
+    songBpm,
+    songBeats,
+    songNote,
+    updateSetlistSongs,
+  ]);
 
-  const handleRemoveSongFromSet = async (index) => {
-    if (!activeSetlist) return;
-    const newSongs = [...activeSetlist.songs];
-    newSongs.splice(index, 1);
-    await updateSetlistSongs(newSongs);
-  };
+  const handleRemoveSongFromSet = useCallback(
+    async (index) => {
+      if (!activeSetlist) return;
+      const newSongs = [...activeSetlist.songs];
+      newSongs.splice(index, 1);
+      await updateSetlistSongs(newSongs);
+    },
+    [activeSetlist, updateSetlistSongs],
+  );
 
-  const moveSong = async (index, direction) => {
-    if (!activeSetlist) return;
-    const newSongs = [...activeSetlist.songs];
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= newSongs.length) return;
-    // Swap
-    [newSongs[index], newSongs[targetIndex]] = [
-      newSongs[targetIndex],
-      newSongs[index],
-    ];
-    await updateSetlistSongs(newSongs);
-  };
+  const moveSong = useCallback(
+    async (index, direction) => {
+      if (!activeSetlist) return;
+      const newSongs = [...activeSetlist.songs];
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= newSongs.length) return;
+      // Swap
+      [newSongs[index], newSongs[targetIndex]] = [
+        newSongs[targetIndex],
+        newSongs[index],
+      ];
+      await updateSetlistSongs(newSongs);
+    },
+    [activeSetlist, updateSetlistSongs],
+  );
 
-  const updateSetlistSongs = async (songs) => {
-    const updatedSet = { ...activeSetlist, songs };
-    setActiveSetlist(updatedSet);
-    if (window.electronAPI) {
-      await window.electronAPI.setlist.save(activeSetlist.name, updatedSet);
-    }
-  };
+
 
   // --- Import from Bank to Setlist ---
   const toggleSelectBankSong = (song) => {
@@ -156,7 +187,7 @@ export function SetlistManager({
     }
   };
 
-  const importSelectedSongs = async () => {
+  const importSelectedSongs = useCallback(async () => {
     if (!activeSetlist) return;
     const songsToAdd = selectedBankSongs.map((s) => ({
       ...s,
@@ -165,7 +196,7 @@ export function SetlistManager({
     await updateSetlistSongs([...(activeSetlist.songs || []), ...songsToAdd]);
     setShowBankImport(false);
     setSelectedBankSongs([]);
-  };
+  }, [activeSetlist, selectedBankSongs, updateSetlistSongs]);
 
   // --- Render Helpers ---
   const renderSongForm = (onSubmit, btnLabel) => (

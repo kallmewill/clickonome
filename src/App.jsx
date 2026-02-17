@@ -55,7 +55,7 @@ function App() {
       }
     };
     loadSavedSounds();
-  }, []);
+  }, [loadAccentSound, loadBeatSound]);
 
   // Setlist State
   const [currentSetlist, setCurrentSetlist] = useState(null);

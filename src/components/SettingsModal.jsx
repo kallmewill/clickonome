@@ -36,7 +36,7 @@ export function SettingsModal({ onClose, onLoadBeat, onLoadAccent }) {
       }
     };
     loadSavedSettings();
-  }, []);
+  }, [onLoadAccent, onLoadBeat]);
 
   const handleImport = async (type) => {
     if (!window.electronAPI) {
